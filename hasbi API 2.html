@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Data ke API dan Tampilkan Tabel</title>
+    <style>
+        form {
+            margin-top: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input {
+            margin-bottom: 12px;
+        }
+
+        button {
+            padding: 8px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Input Data ke API dan Tampilkan Tabel</h1>
+
+    <form id="dataForm">
+        <label for="name">Nama:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="value">Nilai:</label>
+        <input type="text" id="value" name="value" required>
+
+        <button type="button" onclick="submitData()">Submit Data</button>
+    </form>
+
+    <h1>Data dari API</h1>
+
+    <div id="result"></div>
+
+    <script>
+        var apiUrl = 'ISI DENGAN LINK API GOOGLE SHEET ANDA';
+
+        async function submitData() {
+            var nameInput = document.getElementById('name');
+            var valueInput = document.getElementById('value');
+
+            var name = nameInput.value;
+            var value = valueInput.value;
+
+            // Validasi input
+            if (name.trim() === '' || value.trim() === '') {
+                alert('Mohon isi Nama dan Nilai.');
+                return;
+            }
+
+            // Data yang akan dikirim ke API
+            var data = {
+                Nama: name,
+                Nilai: value
+            };
+
+            try {
+                // Lakukan permintaan Fetch untuk mengirim data ke API
+                var response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                // Periksa status respons
+                if (!response.ok) {
+                    throw new Error('Terjadi kesalahan saat mengirim data. Status: ' + response.status);
+                }
+
+                // Reset nilai input setelah berhasil mengirim data
+                nameInput.value = '';
+                valueInput.value = '';
+
+                alert('Data berhasil dikirim!');
+
+                // Saat data baru dikirim, muat ulang data dari API
+                loadData();
+            } catch (error) {
+                console.error('Terjadi kesalahan:', error.message);
+                alert('Terjadi kesalahan saat mengirim data.');
+            }
+        }
+
+        // Fungsi untuk memuat data dari API dan menampilkannya dalam bentuk tabel HTML
+        async function loadData() {
+            // Dapatkan elemen dengan id "result"
+            var resultElement = document.getElementById('result');
+
+            try {
+                // Lakukan permintaan Fetch ke API
+                var response = await fetch(apiUrl);
+
+                // Periksa status respons
+                if (!response.ok) {
+                    throw new Error('Terjadi kesalahan saat memuat data. Status: ' + response.status);
+                }
+
+                // Tanggapan JSON
+                var jsonData = await response.json();
+
+                // Buat elemen tabel
+                var tableElement = document.createElement('table');
+
+                // Buat baris header
+                var headerRow = tableElement.insertRow(0);
+                for (var key in jsonData[0]) {
+                    var th = document.createElement('th');
+                    th.innerHTML = key;
+                    headerRow.appendChild(th);
+                }
+
+                // Iterasi melalui setiap objek dalam data JSON dan buat baris untuk setiap objek
+                jsonData.forEach(function (item, index) {
+                    var row = tableElement.insertRow(-1);
+                    for (var key in item) {
+                        var cell = row.insertCell(-1);
+                        cell.innerHTML = item[key];
+                    }
+
+                    // Tambahkan tombol hapus pada setiap baris
+                    var deleteCell = row.insertCell(-1);
+                    var deleteButton = document.createElement('button');
+                    deleteButton.innerHTML = 'Hapus';
+                    deleteButton.onclick = function () {
+                        // Panggil fungsi untuk menghapus data saat tombol hapus ditekan
+                        deleteData(index); // Menggunakan indeks sebagai parameter
+                    };
+                    deleteCell.appendChild(deleteButton);
+                });
+
+                // Hapus konten sebelumnya (jika ada)
+                resultElement.innerHTML = '';
+
+                // Tambahkan elemen tabel ke dalam elemen result
+                resultElement.appendChild(tableElement);
+            } catch (error) {
+                console.error('Terjadi kesalahan:', error.message);
+                // Tampilkan pesan kesalahan jika terjadi masalah saat memuat data
+                resultElement.innerHTML = 'Terjadi kesalahan saat memuat data.';
+            }
+        }
+
+        async function deleteData(index) {
+            var deleteUrl = apiUrl + '/' + index;
+
+            try {
+                var response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Terjadi kesalahan saat menghapus data. Status: ' + response.status);
+                }
+
+                // Saat data dihapus, muat ulang data dari API
+                loadData();
+            } catch (error) {
+                console.error('Terjadi kesalahan:', error.message);
+                alert('Terjadi kesalahan saat menghapus data.');
+            }
+        }
+
+        // Panggil fungsi untuk memuat data saat halaman dimuat
+        window.onload = loadData;
+    </script>
+
+</body>
+
+</html>
